@@ -1,221 +1,270 @@
+-- Variables et Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local localPlayer = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
+-- States
 local aimEnabled = false
 local espEnabled = false
+local noclipEnabled = false
+local clickTPEnabled = false
 local flyEnabled = false
 local menuVisible = true
 local fov = 100
 local walkspeed = 16
 local aimPart = "Head"
 
--- GUI SETUP
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 450, 0, 350)
-MainFrame.Position = UDim2.new(0, 100, 0, 100)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Visible = menuVisible
+-- FLY CONTROL
+local FlyVelocity = Vector3.new(0,0,0)
+local FlySpeed = 100
+local FlyKeys = {Forward=false,Back=false,Left=false,Right=false,Up=false,Down=false}
 
-local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+-- KEY SYSTEM
+local function createKeySystem()
+    local screenGui = Instance.new("ScreenGui", game.CoreGui)
+    local frame = Instance.new("Frame", screenGui)
+    frame.Size = UDim2.new(0, 400, 0, 200)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -100)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+    frame.Active = true
+    frame.Draggable = true
 
-local Title = Instance.new("TextLabel", TopBar)
-Title.Size = UDim2.new(1, 0, 1, 0)
-Title.Text = "🔥 JolytYTB GUI AIMBOT 🔥"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Text = "🔐 JolytYTB HUB Key System"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 22
+    title.BackgroundTransparency = 1
 
--- Tabs
-local TabButtons = Instance.new("Frame", MainFrame)
-TabButtons.Size = UDim2.new(0, 450, 0, 30)
-TabButtons.Position = UDim2.new(0, 0, 0, 40)
-TabButtons.BackgroundTransparency = 1
+    local textbox = Instance.new("TextBox", frame)
+    textbox.PlaceholderText = "Enter Key (hint: hubjolyt)"
+    textbox.Size = UDim2.new(0, 350, 0, 40)
+    textbox.Position = UDim2.new(0.5, -175, 0.5, -20)
+    textbox.Text = ""
+    textbox.Font = Enum.Font.Gotham
+    textbox.TextColor3 = Color3.new(1, 1, 1)
+    textbox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 
-local AimbotBtn = Instance.new("TextButton", TabButtons)
-AimbotBtn.Size = UDim2.new(0, 150, 1, 0)
-AimbotBtn.Text = "🎯 Aimbot"
-AimbotBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-AimbotBtn.TextColor3 = Color3.new(1, 1, 1)
+    local confirm = Instance.new("TextButton", frame)
+    confirm.Text = "✅ Confirm"
+    confirm.Size = UDim2.new(0, 200, 0, 40)
+    confirm.Position = UDim2.new(0.5, -100, 1, -50)
+    confirm.TextColor3 = Color3.new(1, 1, 1)
+    confirm.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 
-local CrosshairBtn = Instance.new("TextButton", TabButtons)
-CrosshairBtn.Size = UDim2.new(0, 150, 1, 0)
-CrosshairBtn.Position = UDim2.new(0, 150, 0, 0)
-CrosshairBtn.Text = "🎯 Crosshair"
-CrosshairBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-CrosshairBtn.TextColor3 = Color3.new(1, 1, 1)
+    confirm.MouseButton1Click:Connect(function()
+        if textbox.Text == "hubjolyt" then
+            screenGui:Destroy()
+            createMainGUI()
+        else
+            confirm.Text = "❌ Incorrect Key"
+            confirm.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+        end
+    end)
+end
 
-local MiscBtn = Instance.new("TextButton", TabButtons)
-MiscBtn.Size = UDim2.new(0, 150, 1, 0)
-MiscBtn.Position = UDim2.new(0, 300, 0, 0)
-MiscBtn.Text = "⚙️ Misc"
-MiscBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-MiscBtn.TextColor3 = Color3.new(1, 1, 1)
+-- MAIN GUI
+function createMainGUI()
+    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    local MainFrame = Instance.new("Frame", ScreenGui)
+    MainFrame.Size = UDim2.new(0, 450, 0, 400)
+    MainFrame.Position = UDim2.new(0, 100, 0, 100)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    MainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.Visible = menuVisible
 
--- Pages
-local AimbotPage = Instance.new("Frame", MainFrame)
-AimbotPage.Size = UDim2.new(1, 0, 1, -70)
-AimbotPage.Position = UDim2.new(0, 0, 0, 70)
-AimbotPage.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-AimbotPage.Visible = true
+    local TopBar = Instance.new("Frame", MainFrame)
+    TopBar.Size = UDim2.new(1, 0, 0, 40)
+    TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 
-local CrosshairPage = AimbotPage:Clone()
-CrosshairPage.Parent = MainFrame
-CrosshairPage.Visible = false
+    local Title = Instance.new("TextLabel", TopBar)
+    Title.Size = UDim2.new(1, 0, 1, 0)
+    Title.Text = "🔥 JolytYTB GUI AIMBOT 🔥"
+    Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 20
+    Title.BackgroundTransparency = 1
 
-local MiscPage = AimbotPage:Clone()
-MiscPage.Parent = MainFrame
-MiscPage.Visible = false
+    local TabButtons = Instance.new("Frame", MainFrame)
+    TabButtons.Size = UDim2.new(1, 0, 0, 30)
+    TabButtons.Position = UDim2.new(0, 0, 0, 40)
+    TabButtons.BackgroundTransparency = 1
 
--- Aimbot Settings
-local FovLabel = Instance.new("TextLabel", AimbotPage)
-FovLabel.Position = UDim2.new(0, 20, 0, 10)
-FovLabel.Size = UDim2.new(0, 300, 0, 30)
-FovLabel.Text = "📏 FOV: "..fov
-FovLabel.TextColor3 = Color3.new(1, 1, 1)
-FovLabel.BackgroundTransparency = 1
-FovLabel.Font = Enum.Font.Gotham
-FovLabel.TextSize = 16
+    -- Tab Buttons
+    local AimbotBtn = Instance.new("TextButton", TabButtons)
+    AimbotBtn.Size = UDim2.new(0, 150, 1, 0)
+    AimbotBtn.Text = "🎯 Aimbot"
+    AimbotBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+    AimbotBtn.TextColor3 = Color3.new(1, 1, 1)
 
-local IncFov = Instance.new("TextButton", AimbotPage)
-IncFov.Position = UDim2.new(0, 20, 0, 50)
-IncFov.Size = UDim2.new(0, 200, 0, 30)
-IncFov.Text = "➕ Increase FOV"
-IncFov.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-IncFov.TextColor3 = Color3.new(1, 1, 1)
+    local MiscBtn = Instance.new("TextButton", TabButtons)
+    MiscBtn.Size = UDim2.new(0, 150, 1, 0)
+    MiscBtn.Position = UDim2.new(0, 150, 0, 0)
+    MiscBtn.Text = "⚙️ Misc"
+    MiscBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+    MiscBtn.TextColor3 = Color3.new(1, 1, 1)
 
-IncFov.MouseButton1Click:Connect(function()
-    fov = fov + 10
-    FovLabel.Text = "📏 FOV: "..fov
-end)
-
-local ESPButton = Instance.new("TextButton", AimbotPage)
-ESPButton.Position = UDim2.new(0, 20, 0, 90)
-ESPButton.Size = UDim2.new(0, 200, 0, 30)
-ESPButton.Text = "👁️ ESP: OFF"
-ESPButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-ESPButton.TextColor3 = Color3.new(1, 1, 1)
-
-ESPButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    ESPButton.Text = espEnabled and "👁️ ESP: ON" or "👁️ ESP: OFF"
-end)
-
-local FlyButton = Instance.new("TextButton", AimbotPage)
-FlyButton.Position = UDim2.new(0, 20, 0, 130)
-FlyButton.Size = UDim2.new(0, 200, 0, 30)
-FlyButton.Text = "🕊️ Fly: OFF"
-FlyButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-FlyButton.TextColor3 = Color3.new(1, 1, 1)
-
-FlyButton.MouseButton1Click:Connect(function()
-    flyEnabled = not flyEnabled
-    FlyButton.Text = flyEnabled and "🕊️ Fly: ON" or "🕊️ Fly: OFF"
-end)
-
-local WSButton = Instance.new("TextButton", AimbotPage)
-WSButton.Position = UDim2.new(0, 20, 0, 170)
-WSButton.Size = UDim2.new(0, 200, 0, 30)
-WSButton.Text = "🏃 WalkSpeed: "..walkspeed
-WSButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-WSButton.TextColor3 = Color3.new(1, 1, 1)
-
-WSButton.MouseButton1Click:Connect(function()
-    walkspeed = walkspeed + 5
-    localPlayer.Character.Humanoid.WalkSpeed = walkspeed
-    WSButton.Text = "🏃 WalkSpeed: "..walkspeed
-end)
-
--- Crosshair Settings
-local CrosshairInput = Instance.new("TextBox", CrosshairPage)
-CrosshairInput.Position = UDim2.new(0, 20, 0, 10)
-CrosshairInput.Size = UDim2.new(0, 400, 0, 30)
-CrosshairInput.PlaceholderText = "Met l'ID du crosshair (ex: 123456789)"
-
-local ApplyCrosshair = Instance.new("TextButton", CrosshairPage)
-ApplyCrosshair.Position = UDim2.new(0, 20, 0, 50)
-ApplyCrosshair.Size = UDim2.new(0, 190, 0, 30)
-ApplyCrosshair.Text = "✅ Appliquer"
-ApplyCrosshair.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-ApplyCrosshair.TextColor3 = Color3.new(1, 1, 1)
-
-local RemoveCrosshair = Instance.new("TextButton", CrosshairPage)
-RemoveCrosshair.Position = UDim2.new(0, 230, 0, 50)
-RemoveCrosshair.Size = UDim2.new(0, 190, 0, 30)
-RemoveCrosshair.Text = "❌ Enlever"
-RemoveCrosshair.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-RemoveCrosshair.TextColor3 = Color3.new(1, 1, 1)
-
-local Crosshair = Instance.new("ImageLabel", ScreenGui)
-Crosshair.Size = UDim2.new(0, 50, 0, 50)
-Crosshair.BackgroundTransparency = 1
-
-ApplyCrosshair.MouseButton1Click:Connect(function()
-    Crosshair.Image = "rbxassetid://" .. CrosshairInput.Text
-end)
-
-RemoveCrosshair.MouseButton1Click:Connect(function()
-    Crosshair.Image = ""
-end)
-
-RunService.RenderStepped:Connect(function()
-    Crosshair.Position = UDim2.new(0.5, -25, 0.5, -25)
-end)
-
--- MISC
-local TPButton = Instance.new("TextButton", MiscPage)
-TPButton.Position = UDim2.new(0, 20, 0, 10)
-TPButton.Size = UDim2.new(0, 200, 0, 30)
-TPButton.Text = "🚀 Teleport"
-TPButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-TPButton.TextColor3 = Color3.new(1, 1, 1)
-
-TPButton.MouseButton1Click:Connect(function()
-    localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0) -- Change tes coords ici
-end)
-
--- Tab Switch
-AimbotBtn.MouseButton1Click:Connect(function()
+    -- Pages
+    local AimbotPage = Instance.new("Frame", MainFrame)
+    AimbotPage.Size = UDim2.new(1, 0, 1, -70)
+    AimbotPage.Position = UDim2.new(0, 0, 0, 70)
+    AimbotPage.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     AimbotPage.Visible = true
-    CrosshairPage.Visible = false
+
+    local MiscPage = AimbotPage:Clone()
+    MiscPage.Parent = MainFrame
     MiscPage.Visible = false
-end)
 
-CrosshairBtn.MouseButton1Click:Connect(function()
-    AimbotPage.Visible = false
-    CrosshairPage.Visible = true
-    MiscPage.Visible = false
-end)
+    -- Tab Functions
+    AimbotBtn.MouseButton1Click:Connect(function()
+        AimbotPage.Visible = true
+        MiscPage.Visible = false
+    end)
 
-MiscBtn.MouseButton1Click:Connect(function()
-    AimbotPage.Visible = false
-    CrosshairPage.Visible = false
-    MiscPage.Visible = true
-end)
+    MiscBtn.MouseButton1Click:Connect(function()
+        AimbotPage.Visible = false
+        MiscPage.Visible = true
+    end)
 
--- Insert key toggle menu
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Insert then
-        menuVisible = not menuVisible
-        MainFrame.Visible = menuVisible
+    -- AIMBOT PAGE
+    local ToggleAimbot = Instance.new("TextButton", AimbotPage)
+    ToggleAimbot.Position = UDim2.new(0, 20, 0, 10)
+    ToggleAimbot.Size = UDim2.new(0, 200, 0, 30)
+    ToggleAimbot.Text = "🎯 Aimbot OFF"
+    ToggleAimbot.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+    ToggleAimbot.TextColor3 = Color3.new(1, 1, 1)
+
+    ToggleAimbot.MouseButton1Click:Connect(function()
+        aimEnabled = not aimEnabled
+        ToggleAimbot.Text = aimEnabled and "🎯 Aimbot ON" or "🎯 Aimbot OFF"
+    end)
+
+    local FovLabel = Instance.new("TextLabel", AimbotPage)
+    FovLabel.Position = UDim2.new(0, 20, 0, 50)
+    FovLabel.Size = UDim2.new(0, 200, 0, 30)
+    FovLabel.Text = "📏 FOV : " .. fov
+    FovLabel.TextColor3 = Color3.new(1, 1, 1)
+    FovLabel.BackgroundTransparency = 1
+
+    local IncreaseFov = Instance.new("TextButton", AimbotPage)
+    IncreaseFov.Position = UDim2.new(0, 20, 0, 90)
+    IncreaseFov.Size = UDim2.new(0, 90, 0, 30)
+    IncreaseFov.Text = "➕"
+    IncreaseFov.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    IncreaseFov.TextColor3 = Color3.new(1, 1, 1)
+
+    IncreaseFov.MouseButton1Click:Connect(function()
+        fov = fov + 10
+        FovLabel.Text = "📏 FOV : " .. fov
+    end)
+
+    local DecreaseFov = Instance.new("TextButton", AimbotPage)
+    DecreaseFov.Position = UDim2.new(0, 130, 0, 90)
+    DecreaseFov.Size = UDim2.new(0, 90, 0, 30)
+    DecreaseFov.Text = "➖"
+    DecreaseFov.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+    DecreaseFov.TextColor3 = Color3.new(1, 1, 1)
+
+    DecreaseFov.MouseButton1Click:Connect(function()
+        fov = math.max(10, fov - 10)
+        FovLabel.Text = "📏 FOV : " .. fov
+    end)
+
+    -- MISC PAGE
+    local FlyBtn = Instance.new("TextButton", MiscPage)
+    FlyBtn.Position = UDim2.new(0, 20, 0, 10)
+    FlyBtn.Size = UDim2.new(0, 200, 0, 30)
+    FlyBtn.Text = "🕊️ Fly OFF"
+    FlyBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+    FlyBtn.TextColor3 = Color3.new(1, 1, 1)
+
+    FlyBtn.MouseButton1Click:Connect(function()
+        flyEnabled = not flyEnabled
+        FlyBtn.Text = flyEnabled and "🕊️ Fly ON" or "🕊️ Fly OFF"
+    end)
+
+    -- Noclip & ClickTP stays same, à toi d'ajouter si tu veux :)
+end
+
+--== AIMBOT FUNCTION ==
+local function getClosestPlayer()
+    local closest, shortest = nil, math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(aimPart) then
+            local pos, visible = Camera:WorldToViewportPoint(player.Character[aimPart].Position)
+            if visible then
+                local distance = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
+                if distance < shortest and distance <= fov then
+                    shortest = distance
+                    closest = player
+                end
+            end
+        end
     end
-end)
+    return closest
+end
 
--- Fly logic
 RunService.RenderStepped:Connect(function()
+    if aimEnabled then
+        local target = getClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild(aimPart) then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[aimPart].Position)
+        end
+    end
+
+    -- Fly Logic
     if flyEnabled then
-        localPlayer.Character.Humanoid:ChangeState(11)
-        localPlayer.Character.HumanoidRootPart.Velocity = camera.CFrame.LookVector * 50
+        local move = Vector3.new(
+            (FlyKeys.Right and 1 or 0) - (FlyKeys.Left and 1 or 0),
+            (FlyKeys.Up and 1 or 0) - (FlyKeys.Down and 1 or 0),
+            (FlyKeys.Back and 1 or 0) - (FlyKeys.Forward and 1 or 0)
+        )
+        LocalPlayer.Character:FindFirstChild("HumanoidRootPart").Velocity = Camera.CFrame:VectorToWorldSpace(move) * FlySpeed
     end
 end)
 
--- ESP + Aimbot logic (pareil que tes anciens scripts, à intégrer ici)
+UserInputService.InputBegan:Connect(function(input)
+    local key = input.KeyCode
+    if flyEnabled then
+        if key == Enum.KeyCode.W then FlyKeys.Forward = true end
+        if key == Enum.KeyCode.S then FlyKeys.Back = true end
+        if key == Enum.KeyCode.A then FlyKeys.Left = true end
+        if key == Enum.KeyCode.D then FlyKeys.Right = true end
+        if key == Enum.KeyCode.Space then FlyKeys.Up = true end
+        if key == Enum.KeyCode.LeftShift then FlyKeys.Down = true end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    local key = input.KeyCode
+    if flyEnabled then
+        if key == Enum.KeyCode.W then FlyKeys.Forward = false end
+        if key == Enum.KeyCode.S then FlyKeys.Back = false end
+        if key == Enum.KeyCode.A then FlyKeys.Left = false end
+        if key == Enum.KeyCode.D then FlyKeys.Right = false end
+        if key == Enum.KeyCode.Space then FlyKeys.Up = false end
+        if key == Enum.KeyCode.LeftShift then FlyKeys.Down = false end
+    end
+end)
+
+--== FOV CIRCLE ==
+local FovCircle = Drawing.new("Circle")
+FovCircle.Color = Color3.fromRGB(255, 0, 0)
+FovCircle.Thickness = 2
+FovCircle.NumSides = 100
+FovCircle.Filled = false
+
+RunService.RenderStepped:Connect(function()
+    FovCircle.Position = UserInputService:GetMouseLocation()
+    FovCircle.Radius = fov
+    FovCircle.Visible = true
+end)
+
+--== START ==--
+createKeySystem()
